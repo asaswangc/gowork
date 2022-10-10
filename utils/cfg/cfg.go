@@ -17,7 +17,7 @@ func Init(confPath string, runMode string, cfgStruct interface{}) {
 		path = confPath
 	}
 	var file = fmt.Sprintf("cfg%s.toml", runMode)
-	if _, err := toml.DecodeFile(fmt.Sprintf("%s/%s", path, file), &cfgStruct); err != nil {
+	if _, err := toml.DecodeFile(fmt.Sprintf("%s/%s", path, file), cfgStruct); err != nil {
 		log.Fatal("加载配置文件失败")
 	}
 }
