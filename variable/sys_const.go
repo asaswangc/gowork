@@ -12,9 +12,6 @@ const (
 	// RunPort 启动端口
 	RunPort = "port"
 
-	// ConfPath 配置文件
-	ConfPath = "conf"
-
 	// ReleaseMode 启动模式
 	ReleaseMode = "release"
 

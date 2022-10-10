@@ -2,7 +2,6 @@ package logger
 
 import (
 	"fmt"
-	"github.com/asaswangc/gowork/utils/cfg"
 	"github.com/asaswangc/gowork/variable"
 	"log"
 	"time"
@@ -17,7 +16,7 @@ var (
 )
 
 // Init 创建自定义zap logger对象
-func Init(hooks ...func(zapcore.Entry) error) {
+func Init(cfg Cfg, hooks ...func(zapcore.Entry) error) {
 	log.SetFlags(log.Lshortfile | log.Ltime | log.Ldate)
 	// 若为debug模式，创建debug日志级别的logger对象，直接输出到屏幕，不写入文件
 	if variable.Global.Get(variable.RunMode) != variable.ReleaseMode {
@@ -31,34 +30,34 @@ func Init(hooks ...func(zapcore.Entry) error) {
 	// 设置日志内容格式，以及日志输出格式。默认为人类可读格式；若配置了json，则输出为json格式
 	encoderConf := genEncoderConf()
 	encoder := zapcore.NewConsoleEncoder(encoderConf)
-	if cfg.T.ZapLog.JsonEncoder {
+	if cfg.JsonEncoder {
 		encoder = zapcore.NewJSONEncoder(encoderConf)
 	}
 
 	// 错误日志
 	errWriter := &lumberjack.Logger{
-		Filename:   cfg.T.ZapLog.ErrLog,
-		MaxSize:    cfg.T.ZapLog.Maxsize,
-		MaxAge:     cfg.T.ZapLog.MaxAge,
-		MaxBackups: cfg.T.ZapLog.MaxBackups,
-		Compress:   cfg.T.ZapLog.Compress,
+		Filename:   cfg.ErrLog,
+		MaxSize:    cfg.Maxsize,
+		MaxAge:     cfg.MaxAge,
+		MaxBackups: cfg.MaxBackups,
+		Compress:   cfg.Compress,
 	}
 
 	// 警告日志
 	warnWriter := &lumberjack.Logger{
-		Filename:   cfg.T.ZapLog.WarnLog,
-		MaxSize:    cfg.T.ZapLog.Maxsize,
-		MaxAge:     cfg.T.ZapLog.MaxAge,
-		MaxBackups: cfg.T.ZapLog.MaxBackups,
-		Compress:   cfg.T.ZapLog.Compress,
+		Filename:   cfg.WarnLog,
+		MaxSize:    cfg.Maxsize,
+		MaxAge:     cfg.MaxAge,
+		MaxBackups: cfg.MaxBackups,
+		Compress:   cfg.Compress,
 	}
 	// 普通日志
 	infoWriter := &lumberjack.Logger{
-		Filename:   cfg.T.ZapLog.InfoLog,
-		MaxSize:    cfg.T.ZapLog.Maxsize,
-		MaxAge:     cfg.T.ZapLog.MaxAge,
-		MaxBackups: cfg.T.ZapLog.MaxBackups,
-		Compress:   cfg.T.ZapLog.Compress,
+		Filename:   cfg.InfoLog,
+		MaxSize:    cfg.Maxsize,
+		MaxAge:     cfg.MaxAge,
+		MaxBackups: cfg.MaxBackups,
+		Compress:   cfg.Compress,
 	}
 
 	// 日志级别配置，不能直接写zap.InfoLevel等，否则在写error级别的log时，info、warn也会写一份

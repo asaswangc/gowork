@@ -17,20 +17,10 @@ const (
 	DefaultSessionSecret    = "ACtjU8wiey54EXinxPZ5" // cookie加密密钥
 )
 
-var (
-	loggerPrint LoggerFunc
-)
-
-// LoggerFunc 日志打印函数原型
-type LoggerFunc func(interface{})
-
-func SetPrint(printFunc LoggerFunc) {
-	loggerPrint = printFunc
-}
-
 // newStore 生成redis store对象
-func newStore() *RedisClusterStore {
+func newStore(cfg Cfg) *RedisClusterStore {
 	s, _ := NewRedisClusterStore(
+		cfg,
 		DefaultStoreKeyPrefix,
 		0,
 		0,
@@ -163,18 +153,21 @@ func (s *mySession) Written() bool {
 }
 
 // SetMaxAge 调整cookie的max age
-func (s *mySession) SetMaxAge(age int) {
+func (s *mySession) SetMaxAge(age int) (err error) {
 	s.session.Options.MaxAge = age
-	s.store.SetMaxAge(age)
+	if err = s.store.SetMaxAge(age); err != nil {
+		return
+	}
+	return
 }
 
 // WithSessionRedis session中间件，主要目的是创建一个session对象，并放到context里
-func WithSessionRedis(name string) gin.HandlerFunc {
+func WithSessionRedis(name string, cfg Cfg) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if name == "" {
 			name = sessionNameWithRegistry
 		}
-		s := &mySession{name, c.Request, newStore(), nil, false, c.Writer}
+		s := &mySession{name, c.Request, newStore(cfg), nil, false, c.Writer}
 
 		c.Set(sessionNameWithContext, s)
 		defer context.Clear(c.Request)

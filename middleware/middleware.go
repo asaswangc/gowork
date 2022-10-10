@@ -28,10 +28,10 @@ func ErrorHandler() gin.HandlerFunc {
 	}
 }
 
-func Authenticate() gin.HandlerFunc {
+func Authenticate(runMode string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		switch {
-		case variable.Global.Get(variable.RunMode) != variable.ReleaseMode:
+		case runMode != variable.ReleaseMode:
 			ctx.Set("user_id", 1001)
 			ctx.Set("tenant_id", 10013)
 			ctx.Next()

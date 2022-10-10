@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"github.com/asaswangc/gowork/data/redis_cli"
 	"github.com/asaswangc/gowork/utils"
-	"github.com/asaswangc/gowork/utils/cfg"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
@@ -26,6 +25,7 @@ const (
 // RedisClusterStore 自定义store结构体，用于实现gorilla store的相关方法
 // 仿写自：https://github.com/boj/redistore/tree/v1.2
 type RedisClusterStore struct {
+	cfg           Cfg
 	Pool          *redis.ClusterClient
 	Codecs        []securecookie.Codec
 	Options       *sessions.Options // default configuration
@@ -77,7 +77,7 @@ func (s *RedisClusterStore) New(r *http.Request, name string) (*sessions.Session
 	session.Options = &options
 	session.IsNew = true
 	if c, errCookie := r.Cookie(name); errCookie == nil {
-		id, err := utils.DecryptWithRSA(c.Value, cfg.T.KeyPath.Private)
+		id, err := utils.DecryptWithRSA(c.Value, s.cfg.Private)
 		session.ID = id
 		if err == nil {
 			ok, err = s.load(session)
@@ -103,7 +103,7 @@ func (s *RedisClusterStore) Save(_ *http.Request, w http.ResponseWriter, session
 			return err
 		}
 		// 数据加密
-		encryptedData, err := utils.EncryptWithRSA(session.ID, cfg.T.KeyPath.Public)
+		encryptedData, err := utils.EncryptWithRSA(session.ID, s.cfg.Public)
 		if err != nil {
 			return err
 		}
@@ -160,15 +160,14 @@ func (s *RedisClusterStore) serialize(ss *sessions.Session) (r []byte, err error
 	for k, v := range ss.Values {
 		ks, ok := k.(string)
 		if !ok {
-			err := fmt.Errorf("non-string key value, cannot serialize session to JSON: %v", k)
-			return r, fmt.Errorf("反序列化失败,Error:%s", err)
+			return r, fmt.Errorf("反序列化失败,Error:%s", fmt.Errorf("non-string key value, cannot serialize session to JSON: %v", k))
 		}
 		m[ks] = v
 	}
 	return json.Marshal(m)
 }
 
-func NewRedisClusterStore(keyPrefix string, redisAge, maxLength int, secure, httpOnly bool, sameSiteMode http.SameSite, _ ...[]byte) (*RedisClusterStore, error) {
+func NewRedisClusterStore(cfg Cfg, keyPrefix string, redisAge, maxLength int, secure, httpOnly bool, sameSiteMode http.SameSite, _ ...[]byte) (*RedisClusterStore, error) {
 	if redisAge == 0 {
 		redisAge = redisTTLAge
 	}
@@ -180,6 +179,7 @@ func NewRedisClusterStore(keyPrefix string, redisAge, maxLength int, secure, htt
 	}
 
 	rs := &RedisClusterStore{
+		cfg:    cfg,
 		Pool:   redis_cli.RedisDB,
 		Codecs: securecookie.CodecsFromPairs(),
 		Options: &sessions.Options{
